@@ -5,10 +5,19 @@ html(lang="en")
         meta(http-equiv="X-UA-Compatible", content="IE=edge")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
         title do-Zoom
-        link(rel="stylesheet",href="https://unpkg.com/mvp.css")
+        include ./includes/head.pug
+
     body 
+        script(src="/public/js/app.js")
         header
             h1 do-Zoom
         main
             h2 Wellcome to do-Zoom
-        script(src="/public/js/app.js")
+        div 
+            div(id="chatArea" style="border:solid 1px black; width:1000px; overflow:auto; max-height:300px; height:300px;")
+            div(style="display:flex;") 
+                input(id="inputBox", style="margin-top:auto;margin-bottom:auto;")
+                button(id="sendMsgBtn" , style="margin-left:10px;" , onclick="sendBtn()") send
+
+    
+        
