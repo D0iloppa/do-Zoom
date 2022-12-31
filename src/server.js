@@ -1,7 +1,8 @@
 import http from "http";
 import https from "https";
 
-import WebSocket from "ws";
+//import WebSocket from "ws";
+import SocketIO from "socket.io"
 import express from "express";
 
 
@@ -93,14 +94,42 @@ const handleListen = () =>{
 }
 
 const server = (d_Conf["protocol"] == "http") ? http.createServer(dZoom_server) : https.createServer(dZoom_server);
+const io = SocketIO(server);
 
+
+/*
 // webSocket과 server를 모두 같은 포트에 가동시키는 경우 server를 넘겨준다.
 const wss = new WebSocket.Server({ server });
 
+const sockets = [];
 
 wss.on("connection",(socket) => {
+  sockets.push(socket);
+
+  socket["nickname"] = "Anonymous";
+
   console.log("Connected to Browser ✅");
   socket.send("hello");
+
+  socket.on("message",(data)=>{
+    // client message Object parsing
+    let parsed = JSON.parse(data.toString());
+    console.log(parsed);
+
+    const payload = parsed.payload;
+    switch(parsed.type){
+      case "nickname":
+        socket["nickname"] = payload;
+        console.log(payload);
+        break;
+      case "new_message":
+        // socket 리스트에 broadcasting 
+        sockets.forEach(aSocket => {
+          aSocket.send(`${socket.nickname} : ${payload}`);
+        });
+        break;
+    }
+  });
 
   // 해당 소켓이 닫힌 경우
   socket.on("close", ()=>{
@@ -108,6 +137,7 @@ wss.on("connection",(socket) => {
   });
 
 });
+*/
 
 
 
