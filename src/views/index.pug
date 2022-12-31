@@ -12,12 +12,10 @@ html(lang="en")
         header
             h1 do-Zoom
         main
-            h2 Wellcome to do-Zoom
-        div 
-            div(id="chatArea" style="border:solid 1px black; width:1000px; overflow:auto; max-height:300px; height:300px;")
-            div(style="display:flex;") 
-                input(id="inputBox", style="margin-top:auto;margin-bottom:auto;")
-                button(id="sendMsgBtn" , style="margin-left:10px;" , onclick="sendBtn()") send
+            ul
+            form
+                input(type="text",placeholder="write a msg", required)
+                button Send
 
     
         
