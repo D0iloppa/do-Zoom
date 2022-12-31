@@ -14,15 +14,17 @@ const conf_file = "conf.json";
 
 const d_Conf = {
   // @ do-zoom's Protocol
-  "protocol" : "http",
+  "protocol"   : "http",
   // @ do-zoom's domain
-  "domain" : "127.0.0.1",
+  "domain"     : "doilopaa.chickenkiller.com",
   // @ do-zoom's http port
-  "port" : 3939,
+  "port"       : 3939,
+  // @ do-zoom's outter port
+  "oPort"      : 5000,
   // @ do-zoom's https port (secure)
-  "ssl_Port" : 443,
+  "ssl_Port"   : 443,
   // @ do-zoom's cert directory
-  "cert_Path" : "/ssl/"
+  "cert_Path"  : "/ssl/"
 };
 
 
@@ -85,7 +87,7 @@ const handleListen = () =>{
       ##########################################################
         😎 Wellcome to DOIL's dev SERVER (by express) 😎
         🐳 Server listening on port ${d_Conf.port}
-        site : http://${d_Conf.domain}:${d_Conf.port}/
+        site : http://${d_Conf.domain}:${d_Conf.oPort}/
       ##########################################################
       `);
       default:
@@ -94,7 +96,52 @@ const handleListen = () =>{
 }
 
 const server = (d_Conf["protocol"] == "http") ? http.createServer(dZoom_server) : https.createServer(dZoom_server);
-const io = SocketIO(server);
+// websocket server
+const wsServer = SocketIO(server);
+
+
+wsServer.on("connection", (socket) => {
+  socket.onAny((event)=>{
+    console.log(`Socket Event:${event}`);
+  });
+
+  // [enter_room]
+  socket.on("enter_room" , (args , done) => {
+    const data = {...args};
+    const roomNm = data.roomName;
+    socket.join(roomNm);
+
+    // callback이 명백하게 선언된 경우에만 실행
+    if(typeof(done) == "function") done({ id : socket.id});
+
+    socket.to(roomNm).emit("welcome", { 
+        id  : socket.id,
+        msg : "hi"
+      });
+
+  });
+  /////////////////  enter_room END  ////////////////////
+
+
+
+
+  
+  //setSocketEvents(socket);
+});
+
+// 이벤트 정의 함수
+function setSocketEvents(socket){
+
+  // [enter_room]
+  socket.on("enter_room" , (args , done) => {
+    const data = {...args};
+    socket.join(data.roomName);
+
+    // callback이 명백하게 선언된 경우에만 실행
+    if(typeof(done) == "function") done({ id : socket.id});
+  });
+  ///////////////////////////////
+}
 
 
 /*

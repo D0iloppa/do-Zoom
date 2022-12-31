@@ -8,9 +8,19 @@ html(lang="en")
         include ./includes/head.pug
 
     body 
-        script(src="/socket.io/socket.io.js")
-        script(src="/public/js/app.js")
         header
             h1 do-Zoom
         main
+            div#welcome
+                form
+                    input(type="text" , placeholder="room name", required)
+                    button Enter Room
+            div#room(style="display:none")
+                h3
+                ul
+                form
+                    input(placeholder="message", required , type="text")
+                    button Send
+        script(src="/socket.io/socket.io.js")
+        script(src="/public/js/app.js")
            
