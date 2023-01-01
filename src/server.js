@@ -2,8 +2,12 @@ import http from "http";
 import https from "https";
 
 //import WebSocket from "ws";
-import SocketIO from "socket.io"
+import {Server} from "socket.io"
+import {instrument} from "@socket.io/admin-ui";
+
 import express from "express";
+
+
 
 
 // 설정파일
@@ -16,7 +20,7 @@ const d_Conf = {
   // @ do-zoom's Protocol
   "protocol"   : "http",
   // @ do-zoom's domain
-  "domain"     : "doilopaa.chickenkiller.com",
+  "domain"     : "doiloppa.chickenkiller.com",
   // @ do-zoom's http port
   "port"       : 3939,
   // @ do-zoom's outter port
@@ -71,6 +75,9 @@ dZoom_server.use("/public",express.static(__dirname + "/public"));
 dZoom_server.get("/", (req,res)=>{
   res.render("index");
 });
+dZoom_server.get("/tset", (req,res)=>{
+  res.render("testHome");
+});
 // catchall
 dZoom_server.get("/*", (req,res) => res.redirect("/"));
 
@@ -97,7 +104,52 @@ const handleListen = () =>{
 
 const server = (d_Conf["protocol"] == "http") ? http.createServer(dZoom_server) : https.createServer(dZoom_server);
 // websocket server
-const wsServer = SocketIO(server);
+const wsServer = new Server(server,{
+  cors:{
+    origin:["https:/admin.socket.io"],
+    credentials : false,
+  }
+});
+instrument(wsServer , {
+  auth:{
+    type:"basic",
+    username:"admin",
+    password:"$2b$10$xnm4EGwDhHQbVXYzz2AsXO4716EH6J2lDuE0ihaOOkWWb.Ig92G0."
+    // require("bcrypt").hashSync("password", 10) : password 생성
+  },
+  serverId:`${require("os").hostname()}#${process.pid}`
+});
+
+//SocketIO(server);
+
+/**
+ * public room의 리스트 리턴(names)
+ * @returns publicRooms
+ */
+function publicRooms(){
+
+  // Destructuring assignment
+  const { sockets : {
+        adapter : { sids , rooms}
+    }
+  } = wsServer;
+
+  const publicRooms = [];
+  
+  rooms.forEach( (_,key)=>{
+    if(!sids.get(key)) publicRooms.push(key)
+  });
+  return publicRooms;
+}
+
+/**
+ * 해당 방의 user size를 구한다
+ * @param {*} roomName : 방의 이름
+ */
+function countRoom(roomName){
+  return wsServer.sockets.adapter.rooms.get(roomName)?.size;
+}
+
 
 
 wsServer.on("connection", (socket) => {
@@ -126,8 +178,10 @@ wsServer.on("connection", (socket) => {
     socket.to(roomNm).emit("welcome", { 
         id       : socket.id,
         nickname : socket.nickname,
+        roomSize : countRoom(roomNm),
         msg      : "hi"
       });
+    wsServer.sockets.emit("room_change" , publicRooms());
 
   });
   /////////////////  enter_room END  ////////////////////
@@ -167,66 +221,25 @@ wsServer.on("connection", (socket) => {
   *  disconnect되는 중에 대한 이벤트
   */
   socket.on("disconnecting", ()=>{
-    
       socket.rooms.forEach( room => {
         socket.to(room).emit("bye",{ 
             id       : socket.id,
             nickname : socket.nickname,
+            roomSize : countRoom(room) -1 ,
             msg      : "bye"
           });
       });
 
   });
-  /////////////////  disconnecting END  /////////////////
-
-  
-  //setSocketEvents(socket);
-});
 
 
-
-/*
-// webSocket과 server를 모두 같은 포트에 가동시키는 경우 server를 넘겨준다.
-const wss = new WebSocket.Server({ server });
-
-const sockets = [];
-
-wss.on("connection",(socket) => {
-  sockets.push(socket);
-
-  socket["nickname"] = "Anonymous";
-
-  console.log("Connected to Browser ✅");
-  socket.send("hello");
-
-  socket.on("message",(data)=>{
-    // client message Object parsing
-    let parsed = JSON.parse(data.toString());
-    console.log(parsed);
-
-    const payload = parsed.payload;
-    switch(parsed.type){
-      case "nickname":
-        socket["nickname"] = payload;
-        console.log(payload);
-        break;
-      case "new_message":
-        // socket 리스트에 broadcasting 
-        sockets.forEach(aSocket => {
-          aSocket.send(`${socket.nickname} : ${payload}`);
-        });
-        break;
-    }
+  // [disconnect]
+  socket.on("disconnect", ()=>{    
+    wsServer.sockets.emit("room_change" , publicRooms());
   });
-
-  // 해당 소켓이 닫힌 경우
-  socket.on("close", ()=>{
-    console.log("Disconnected from the Browser ❌");
-  });
+  /////////////////  disconnect END  ////////////////////
 
 });
-*/
-
 
 
 server.listen(d_Conf["port"] , handleListen);
