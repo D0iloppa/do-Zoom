@@ -7,6 +7,7 @@ import {instrument} from "@socket.io/admin-ui";
 
 import express from "express";
 
+import fs from "fs";
 
 
 
@@ -18,7 +19,7 @@ const conf_file = "conf.json";
 
 const d_Conf = {
   // @ do-zoom's Protocol
-  "protocol"   : "http",
+  "protocol"   : "https",
   // @ do-zoom's domain
   "domain"     : "doiloppa.chickenkiller.com",
   // @ do-zoom's http port
@@ -28,8 +29,15 @@ const d_Conf = {
   // @ do-zoom's https port (secure)
   "ssl_Port"   : 443,
   // @ do-zoom's cert directory
-  "cert_Path"  : "/ssl/"
+  "cert_Path"  : "/ssl/",
+  // @ do-zoom's certOptions
+ 
 };
+const ssl_options = {
+  ca: fs.readFileSync(`/etc/letsencrypt/live/${d_Conf.domain}/fullchain.pem`),
+  key: fs.readFileSync(`/etc/letsencrypt/live/${d_Conf.domain}/privkey.pem`),
+  cert: fs.readFileSync(`/etc/letsencrypt/live/${d_Conf.domain}/cert.pem`)
+}
 
 
 const dZoom_server = express();
@@ -71,7 +79,12 @@ dZoom_server.use("/public",express.static(__dirname + "/public"));
  
 
  */
-
+/*
+// ssl 인증
+ dZoom_server.get("/.well-known/acme-challenge/iHDaVKCghKdVzH-rwZDXPdaJRYdGfLad0tR8QETay-k" , (req,res)=>{
+  res.send("iHDaVKCghKdVzH-rwZDXPdaJRYdGfLad0tR8QETay-k.mul5L5DzHPYfhzYIggPxO1CaC55Wiz8tFLPTWfhJd5Q");
+})
+*/
 dZoom_server.get("/", (req,res)=>{
   res.render("index");
 });

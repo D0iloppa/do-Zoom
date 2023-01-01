@@ -7,6 +7,11 @@ html(lang="en")
         title do-Zoom
         include ./includes/head.pug
 
-    body 
+    body
+        header
+            h1 do-Zoom
+        main
+            // playsinline : 전체화면 방지
+            video#myFace(autoplay,playsinline,width="400",height="400")
         script(src="/public/js/app.js")
-           
+        
