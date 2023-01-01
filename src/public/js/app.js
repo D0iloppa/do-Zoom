@@ -6,13 +6,28 @@ socket.on("connection",(socket)=>{
     console.log("your id : ", socket.id);
 });
 
-socket.on("welcome", (args) => {
-    const data = {...args};
+socket.on("welcome", (user) => {
+    const data = {...user};
     console.log(data);
-
-    const msg = "Someone joined!";
+   
+    const msg =  `${data.nickname} arrived!`;
     addMessage(msg);
 });
+
+socket.on("bye", (user) => {
+    const data = {...user};
+    console.log(data);
+
+    const msg = `${data.nickname} left.`;
+    addMessage(msg);
+});
+
+socket.on("new_message",(args)=>{
+    const data = {...args};
+
+    addMessage(data.msg);
+});
+
 
 
 
@@ -30,13 +45,38 @@ const welcome = $("#welcome");
 const welcomeForm = welcome.find("form");
 const room = $("#room");
 
+let roomName;
+let nickName = false;
 function initEvents(){    
+
+      // 닉네임 save
+      const nameForm = $("#name");
+      nameForm.on("submit" , function(event){
+          event.preventDefault();
+
+          const input = $(this).find("input");
+          nickName = input.val();
+          socket.emit(
+              "setNickname" ,  // event명
+              {   // server로 보낼 data
+                  nickName : nickName,
+                  roomName : roomName 
+              } ,
+              (res) => {  // done callback
+              console.log(res);
+          });
+      });
+  
 
     // arrow function this : function을 실제 실행시키는 객체 (window)
     // function 내부에서의 this : 해당 function을 실행 시키는 객체 (form)
     welcomeForm.on("submit", function (event) {
         event.preventDefault();
 
+        if(!nickName) {
+            alert("you have to set the nickname");
+            return;
+        }
         const input = $(this).find("input");
 
         const eventName = "enter_room";
@@ -60,8 +100,8 @@ function initEvents(){
         socket.emit(
             eventName ,  // event명
             sendingData ,  // server로 보낼 data
-            (obj) => {  // done callback
-                console.log(obj);
+            (res) => {  // done callback
+                console.log(res);
                 console.log("server processing is DONE ✅")
                 console.log("callback : clear the input value");
                 roomName = input.val();
@@ -72,7 +112,7 @@ function initEvents(){
     });
 }
 
-let roomName;
+
 
 
 /**
@@ -83,6 +123,28 @@ function showRoom(){
     room.css("display","");
     const roomTitle = room.find("h3");
     roomTitle.text(`Room ${roomName}`);
+
+    // 메세지 sending form
+    const msgForm = room.find("#msg");
+    msgForm.on("submit" , function(event){
+        event.preventDefault();
+
+        const input = $(this).find("input");
+
+        socket.emit(
+            "new_message" ,  // event명
+            {   // server로 보낼 data
+                msg      : input.val(),
+                roomName : roomName 
+            } ,
+            (res) => {  // done callback
+            console.log(res);
+            addMessage(`You: ${input.val()}`);
+            input.val("");
+        });
+    });
+
+
 }
 function addMessage(msg){
     const roomLogUl = room.find("ul");

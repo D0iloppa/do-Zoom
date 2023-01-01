@@ -101,10 +101,19 @@ const wsServer = SocketIO(server);
 
 
 wsServer.on("connection", (socket) => {
+  // any event listener [like middleware]
   socket.onAny((event)=>{
     console.log(`Socket Event:${event}`);
   });
 
+  // socket.rooms : [set]
+
+  // default nickname-set
+  const now = new Date();
+  socket["nickname"] = `anonymous_${now.getTime()}`;
+
+
+  // 이벤트 리스너 정의
   // [enter_room]
   socket.on("enter_room" , (args , done) => {
     const data = {...args};
@@ -115,33 +124,65 @@ wsServer.on("connection", (socket) => {
     if(typeof(done) == "function") done({ id : socket.id});
 
     socket.to(roomNm).emit("welcome", { 
-        id  : socket.id,
-        msg : "hi"
+        id       : socket.id,
+        nickname : socket.nickname,
+        msg      : "hi"
       });
 
   });
   /////////////////  enter_room END  ////////////////////
 
+  // [nickname]
+  socket.on("setNickname" , (args , done) => {
+    const data = {...args};
+    const nickName = data.nickName;
+
+    socket["nickname"] = nickName;
+  
+    // callback이 명백하게 선언된 경우에만 실행
+    if(typeof(done) == "function") done({ id : socket.id});
+  });
+    /////////////////  enter_room END  ////////////////////
+
+   // [new_message]
+   socket.on("new_message" , (args , done) => {
+    const data = {...args};
+    const msg  = data.msg;
+    const room = data.roomName;
+
+    socket.to(room).emit("new_message", { 
+      id  : socket.id,
+      msg : `${socket.nickname}: ${msg}`
+    });
+
+    // callback이 명백하게 선언된 경우에만 실행
+    if(typeof(done) == "function") done({ id : socket.id});
+  });
+  /////////////////  new_message END  ////////////////////
 
 
+  /*
+  // [disconnecting]
+  *  완전히 disconnected 된 것이 아니라,
+  *  disconnect되는 중에 대한 이벤트
+  */
+  socket.on("disconnecting", ()=>{
+    
+      socket.rooms.forEach( room => {
+        socket.to(room).emit("bye",{ 
+            id       : socket.id,
+            nickname : socket.nickname,
+            msg      : "bye"
+          });
+      });
+
+  });
+  /////////////////  disconnecting END  /////////////////
 
   
   //setSocketEvents(socket);
 });
 
-// 이벤트 정의 함수
-function setSocketEvents(socket){
-
-  // [enter_room]
-  socket.on("enter_room" , (args , done) => {
-    const data = {...args};
-    socket.join(data.roomName);
-
-    // callback이 명백하게 선언된 경우에만 실행
-    if(typeof(done) == "function") done({ id : socket.id});
-  });
-  ///////////////////////////////
-}
 
 
 /*
